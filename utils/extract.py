@@ -1,45 +1,37 @@
+from pathlib import Path
+
 from pypdf import PdfReader
 
-class extractor():
 
-    def __init__(self, path):
-        self.reader = PdfReader(path)
-        self.pages = self.reader.pages
-        self.text = ""
-        self.no_of_pages = len(self.pages)
-        self.first_page_text = ""
-        self.success = True
+def extract_text(input_path: str | Path, output_path: str | Path) -> dict:
+    """
+    Extract all text from a PDF and save it to a TXT file.
+    Returns metadata about the extraction.
+    """
+    reader = PdfReader(str(input_path))
+    pages = reader.pages
+    total_pages = len(pages)
 
-    def text_extractor(self):
-            if self.no_of_pages > 0:
-                for page in self.pages:
-                    txt = page.extract_text()
-                    if txt is not None:
-                        self.text += txt
-                    else:
-                        print("no text in pdf")
-                        continue
-                
-                
-                self.first_page_text = self.pages[0].extract_text()
-            else:
-                self.success = False
-        
+    if total_pages == 0:
+        raise ValueError("PDF has no pages")
 
-    def text_saver(self):
-        try:
-            with open("text.txt", 'w') as file:
-                file.write(self.text)
-        except Exception as e:
-            print(e)
-            self.success = False
-        
-    
-    def output(self):
-        if self.success == True:
-            print("Succesfully wrote the whole text in text.txt.")
-    
-        print("-----First Page Text-----")
-        print(self.first_page_text)
+    text_parts: list[str] = []
+    for page in pages:
+        page_text = page.extract_text()
+        if page_text:
+            text_parts.append(page_text)
 
-        print(f"Number of pages: {self.no_of_pages}")
+    full_text = "\n".join(text_parts)
+    first_page_text = pages[0].extract_text() or ""
+
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(full_text)
+
+    return {
+        "total_pages": total_pages,
+        "first_page_text": first_page_text,
+        "output_path": str(output_path),
+    }

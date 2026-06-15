@@ -1,11 +1,21 @@
-from pypdf import PdfWriter
+from pathlib import Path
 
-# Initialize the writer object (acts as a blank canvas)
-writer = PdfWriter()
+from pypdf import PdfReader, PdfWriter
 
-# You must add at least one page to create a valid PDF
-writer.add_blank_page(width=612, height=792)  # Standard Letter size in points
 
-# Save and write the data to a physical file
-with open("new_document.pdf", "wb") as f:
-    writer.write(f)
+def merge_pdfs(input_paths: list[str | Path], output_path: str | Path) -> int:
+    """Merge multiple PDFs into a single file. Returns total page count."""
+    writer = PdfWriter()
+
+    for path in input_paths:
+        reader = PdfReader(str(path))
+        for page in reader.pages:
+            writer.add_page(page)
+
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(output_path, "wb") as f:
+        writer.write(f)
+
+    return len(writer.pages)
